@@ -17,18 +17,20 @@ def heartbeat_dir(tmp_path):
 
 @pytest.fixture
 def sample_config(tmp_path):
-    """Config dict with heartbeat_dir pointing to tmp_path."""
+    """Config dict with new-format commands/recovery_actions."""
     return {
-        "heartbeat_dir": str(tmp_path / "heartbeats"),
         "log_level": "WARNING",
         "processes": {
             "test_server": {
                 "display_name": "TestServer",
                 "timeout_seconds": 60,
-                "startup_command": "python server.py",
-                "cleanup_script": "/tmp/cleanup.sh",
-                "heartbeat_filename": "test_server.json",
+                "heartbeat_path": str(tmp_path / "heartbeats" / "test_server.json"),
                 "enabled": True,
+                "commands": {
+                    "start": "python server.py",
+                    "clear_db": "/tmp/cleanup.sh",
+                },
+                "recovery_actions": ["kill", "clear_db", "start"],
             },
         },
     }

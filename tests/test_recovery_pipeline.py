@@ -20,6 +20,19 @@ RESTART_FAIL = RestartResult(
     success=False, command="python s.py", error="not found"
 )
 
+PROC_CONFIG = {
+    "commands": {"start": "python s.py", "clear_db": "/tmp/clean.sh"},
+    "recovery_actions": ["kill", "clear_db", "start"],
+}
+
+
+def _config(**overrides):
+    """Build a proc_config with overrides."""
+    cfg = dict(PROC_CONFIG)
+    cfg["commands"] = dict(cfg["commands"])
+    cfg.update(overrides)
+    return cfg
+
 
 class TestRunRecovery:
     @patch("src.pipeline.recovery_pipeline.restart_process")
@@ -32,7 +45,7 @@ class TestRunRecovery:
         mock_clean.return_value = CLEAN_OK
         mock_restart.return_value = RESTART_OK
 
-        result = run_recovery("test", 1234, "/tmp/clean.sh", "python s.py")
+        result = run_recovery("test", 1234, PROC_CONFIG)
         assert result.fully_recovered is True
         assert result.stage_failed is None
 
@@ -44,7 +57,7 @@ class TestRunRecovery:
     ):
         mock_kill.return_value = KILL_FAIL
 
-        result = run_recovery("test", 1234, "/tmp/clean.sh", "python s.py")
+        result = run_recovery("test", 1234, PROC_CONFIG)
         assert result.fully_recovered is False
         assert result.stage_failed == "kill"
         mock_clean.assert_not_called()
@@ -60,9 +73,8 @@ class TestRunRecovery:
         mock_clean.return_value = CLEAN_FAIL
         mock_restart.return_value = RESTART_OK
 
-        result = run_recovery("test", 1234, "/tmp/clean.sh", "python s.py")
+        result = run_recovery("test", 1234, PROC_CONFIG)
         assert result.fully_recovered is True
-        assert result.clean_result.success is False
         mock_restart.assert_called_once()
 
     @patch("src.pipeline.recovery_pipeline.restart_process")
@@ -75,9 +87,9 @@ class TestRunRecovery:
         mock_clean.return_value = CLEAN_OK
         mock_restart.return_value = RESTART_FAIL
 
-        result = run_recovery("test", 1234, "/tmp/clean.sh", "python s.py")
+        result = run_recovery("test", 1234, PROC_CONFIG)
         assert result.fully_recovered is False
-        assert result.stage_failed == "restart"
+        assert result.stage_failed == "start"
 
     @patch("src.pipeline.recovery_pipeline.restart_process")
     @patch("src.pipeline.recovery_pipeline.run_cleanup")
@@ -88,7 +100,7 @@ class TestRunRecovery:
         mock_clean.return_value = CLEAN_OK
         mock_restart.return_value = RESTART_OK
 
-        result = run_recovery("test", None, "/tmp/clean.sh", "python s.py")
+        result = run_recovery("test", None, PROC_CONFIG)
         assert result.fully_recovered is True
         mock_kill.assert_not_called()
 
@@ -102,8 +114,44 @@ class TestRunRecovery:
         mock_clean.return_value = CLEAN_OK
         mock_restart.return_value = RESTART_OK
 
-        result = run_recovery("test", 1234, "/tmp/clean.sh", "python s.py")
+        result = run_recovery("test", 1234, PROC_CONFIG)
         assert result.kill_result is KILL_OK
-        assert result.clean_result is CLEAN_OK
         assert result.restart_result is RESTART_OK
         assert result.process_key == "test"
+
+    @patch("src.pipeline.recovery_pipeline.restart_process")
+    @patch("src.pipeline.recovery_pipeline.run_cleanup")
+    @patch("src.pipeline.recovery_pipeline.kill_process")
+    def test_custom_action_order(
+        self, mock_kill, mock_clean, mock_restart
+    ):
+        """Actions with clear_email_logs added."""
+        mock_kill.return_value = KILL_OK
+        mock_clean.return_value = CLEAN_OK
+        mock_restart.return_value = RESTART_OK
+
+        cfg = {
+            "commands": {
+                "start": "python s.py",
+                "clear_db": "/tmp/clean.sh",
+                "clear_email_logs": "/tmp/clear_emails.sh",
+            },
+            "recovery_actions": ["kill", "clear_db", "clear_email_logs", "start"],
+        }
+        result = run_recovery("test", 1234, cfg)
+        assert result.fully_recovered is True
+        assert mock_clean.call_count == 2  # clear_db + clear_email_logs
+
+    @patch("src.pipeline.recovery_pipeline.restart_process")
+    @patch("src.pipeline.recovery_pipeline.kill_process")
+    def test_skip_kill_only_config(self, mock_kill, mock_restart):
+        """Config with only start (no kill, no cleanup)."""
+        mock_restart.return_value = RESTART_OK
+
+        cfg = {
+            "commands": {"start": "python s.py"},
+            "recovery_actions": ["start"],
+        }
+        result = run_recovery("test", 1234, cfg)
+        assert result.fully_recovered is True
+        mock_kill.assert_not_called()

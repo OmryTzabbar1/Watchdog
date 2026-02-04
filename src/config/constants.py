@@ -11,7 +11,6 @@ class ProcessHealth(Enum):
 
 
 DEFAULT_TIMEOUT_SECONDS = 300
-DEFAULT_HEARTBEAT_DIR = "heartbeats"
 DEFAULT_LOG_LEVEL = "INFO"
 DEFAULT_DB_PATH = "watchdog.db"
 DEFAULT_CONSECUTIVE_FAILURES = 2
@@ -20,8 +19,9 @@ LOCK_FILE_PATH = "/tmp/watchdog.lock"
 REQUIRED_PROCESS_FIELDS = [
     "display_name",
     "timeout_seconds",
-    "startup_command",
-    "cleanup_script",
-    "heartbeat_filename",
+    "heartbeat_path",
     "enabled",
 ]
+
+BUILTIN_ACTIONS = {"kill"}
+DEFAULT_RECOVERY_ACTIONS = ["kill", "clear_db", "start"]

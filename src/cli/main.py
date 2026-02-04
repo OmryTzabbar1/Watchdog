@@ -1,43 +1,50 @@
-"""Watchdog CLI entry point — invoked by cron."""
+"""Watchdog CLI — process supervisor with subcommands."""
 
-import fcntl
+import argparse
 import sys
-from io import IOBase
-from pathlib import Path
 
-from src.config.config_loader import (
-    load_config,
-    get_process_configs,
-    validate_config,
-)
-from src.config.constants import (
-    ProcessHealth,
-    LOCK_FILE_PATH,
-    DEFAULT_DB_PATH,
-    DEFAULT_CONSECUTIVE_FAILURES,
-)
-from src.database.store import WatchdogStore
+from src.config.config_loader import load_config, validate_config
 from src.logging.logger import setup_logging, get_logger
-from src.monitor.checker import check_all_processes
-from src.pipeline.recovery_pipeline import run_recovery
 
 logger = get_logger("main")
 
 
-def acquire_lock(lock_path: str = LOCK_FILE_PATH) -> IOBase | None:
-    """Acquire an exclusive lock file. Returns file handle or None."""
-    try:
-        f = open(lock_path, "w")
-        fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        return f
-    except (IOError, OSError):
-        return None
+def build_parser() -> argparse.ArgumentParser:
+    """Build the CLI argument parser."""
+    parser = argparse.ArgumentParser(
+        prog="watchdog",
+        description="Process supervisor for Gmail league system",
+    )
+    parser.add_argument(
+        "-c", "--config", default="config.json",
+        help="Path to config.json",
+    )
+    sub = parser.add_subparsers(dest="command")
+
+    sub.add_parser("check", help="Check all processes (cron mode)")
+
+    p_on = sub.add_parser("on", help="Start a process")
+    p_on.add_argument("process", help="Process key from config")
+
+    p_off = sub.add_parser("off", help="Stop a process")
+    p_off.add_argument("process", help="Process key from config")
+
+    p_restart = sub.add_parser("restart", help="Restart a process")
+    p_restart.add_argument("process", help="Process key from config")
+
+    sub.add_parser("stop-all", help="Stop all enabled processes")
+    sub.add_parser("start-all", help="Start all enabled processes")
+
+    return parser
 
 
-def main(config_path: str = "config.json") -> int:
+def main(argv: list[str] | None = None) -> int:
     """Main entry point. Returns 0 on success, 1 on failure, 2 on error."""
+    parser = build_parser()
+    args = parser.parse_args(argv)
+
     try:
-        config = load_config(config_path)
+        config = load_config(args.config)
     except (FileNotFoundError, Exception) as e:
         print(f"CRITICAL: Cannot load config: {e}", file=sys.stderr)
         return 2
@@ -50,84 +57,22 @@ def main(config_path: str = "config.json") -> int:
             logger.error("Config error: %s", err)
         return 2
 
-    lock = acquire_lock()
-    if lock is None:
-        logger.info("Another Watchdog instance is running, exiting")
-        return 0
-
-    db_path = config.get("db_path", DEFAULT_DB_PATH)
-    threshold = config.get("consecutive_failures_threshold", DEFAULT_CONSECUTIVE_FAILURES)
-    store = WatchdogStore(db_path)
-
-    try:
-        return _run_checks(config, store, threshold)
-    finally:
-        store.close()
-        lock.close()
-
-
-def _run_checks(config: dict, store: WatchdogStore, threshold: int) -> int:
-    """Check all processes and recover unhealthy ones."""
-    report = check_all_processes(config)
-    enabled = get_process_configs(config)
-    any_failed = False
-
-    for result in report.results:
-        heartbeat_ts = (
-            result.last_heartbeat.isoformat() if result.last_heartbeat else None
-        )
-
-        if result.health == ProcessHealth.HEALTHY:
-            store.record_check(
-                result.process_key, result.health.value,
-                result.pid, heartbeat_ts, None,
-            )
-            logger.info("%s: healthy", result.display_name)
-            continue
-
-        logger.warning(
-            "%s: %s (PID=%s, elapsed=%s)",
-            result.display_name, result.health.value,
-            result.pid, result.elapsed_seconds,
-        )
-
-        failures = store.record_check(
-            result.process_key, result.health.value,
-            result.pid, heartbeat_ts, None,
-            action="waiting_for_consecutive" if threshold > 1 else None,
-        )
-
-        if failures < threshold:
-            logger.info(
-                "%s: failure %d/%d, waiting before recovery",
-                result.display_name, failures, threshold,
-            )
-            continue
-
-        logger.warning(
-            "%s: %d consecutive failures, triggering recovery",
-            result.display_name, failures,
-        )
-
-        proc_config = enabled[result.process_key]
-        recovery = run_recovery(
-            process_key=result.process_key,
-            pid=result.pid,
-            cleanup_script=proc_config["cleanup_script"],
-            startup_command=proc_config["startup_command"],
-        )
-        if recovery.fully_recovered:
-            store.reset_failures(result.process_key)
-        else:
-            any_failed = True
-
-    logger.info(
-        "Check complete: %d checked, %d healthy, %d unhealthy",
-        report.processes_checked,
-        report.processes_healthy,
-        report.processes_unhealthy,
+    from src.cli.check import handle_check
+    from src.cli.handlers import (
+        handle_on, handle_off, handle_restart,
+        handle_stop_all, handle_start_all,
     )
-    return 1 if any_failed else 0
+
+    command = args.command or "check"
+    dispatch = {
+        "check": lambda: handle_check(config),
+        "on": lambda: handle_on(config, args.process),
+        "off": lambda: handle_off(config, args.process),
+        "restart": lambda: handle_restart(config, args.process),
+        "stop-all": lambda: handle_stop_all(config),
+        "start-all": lambda: handle_start_all(config),
+    }
+    return dispatch[command]()
 
 
 if __name__ == "__main__":

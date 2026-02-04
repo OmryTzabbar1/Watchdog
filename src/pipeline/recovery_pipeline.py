@@ -1,7 +1,8 @@
-"""Orchestrate the kill -> clean -> restart recovery pipeline."""
+"""Orchestrate config-driven recovery pipeline."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
+from src.config.constants import DEFAULT_RECOVERY_ACTIONS
 from src.logging.logger import get_logger
 from src.recovery.killer import KillResult, kill_process
 from src.recovery.cleaner import CleanResult, run_cleanup
@@ -13,66 +14,82 @@ logger = get_logger("pipeline")
 @dataclass
 class PipelineResult:
     process_key: str
-    kill_result: KillResult | None = None
-    clean_result: CleanResult | None = None
-    restart_result: RestartResult | None = None
+    action_results: list[tuple[str, object]] = field(default_factory=list)
     fully_recovered: bool = False
     stage_failed: str | None = None
+
+    @property
+    def kill_result(self) -> KillResult | None:
+        for name, res in self.action_results:
+            if name == "kill":
+                return res
+        return None
+
+    @property
+    def restart_result(self) -> RestartResult | None:
+        for name, res in self.action_results:
+            if name == "start":
+                return res
+        return None
 
 
 def run_recovery(
     process_key: str,
     pid: int | None,
-    cleanup_script: str,
-    startup_command: str,
+    proc_config: dict,
 ) -> PipelineResult:
-    """Execute full recovery: kill -> clean -> restart.
+    """Execute recovery actions defined in proc_config.
 
-    Stops if kill fails. Continues past cleanup failure.
+    Actions are read from proc_config["recovery_actions"].
+    'kill' and 'start' failures stop the pipeline.
+    Other action failures warn but continue.
     """
     result = PipelineResult(process_key=process_key)
+    actions = proc_config.get("recovery_actions", DEFAULT_RECOVERY_ACTIONS)
+    commands = proc_config.get("commands", {})
 
-    # Step 1: Kill (skip if no PID)
-    if pid is not None:
-        logger.info("Killing process %s (PID %d)", process_key, pid)
-        result.kill_result = kill_process(pid)
-        if not result.kill_result.success:
-            logger.error(
-                "Kill failed for %s: %s",
-                process_key, result.kill_result.error,
+    for action in actions:
+        action_result = _execute_action(action, process_key, pid, commands)
+        result.action_results.append((action, action_result))
+
+        if not action_result.success:
+            if action in ("kill", "start"):
+                logger.error(
+                    "%s failed for %s: %s",
+                    action, process_key, action_result.error,
+                )
+                result.stage_failed = action
+                return result
+            logger.warning(
+                "Action '%s' failed for %s (continuing)",
+                action, process_key,
             )
-            result.stage_failed = "kill"
-            return result
-        logger.info("Process %s killed successfully", process_key)
-    else:
-        logger.info("No PID for %s, skipping kill", process_key)
 
-    # Step 2: Cleanup
-    logger.info("Running cleanup for %s: %s", process_key, cleanup_script)
-    result.clean_result = run_cleanup(cleanup_script)
-    if not result.clean_result.success:
-        detail = (result.clean_result.error
-                  or result.clean_result.stderr
-                  or f"exit code {result.clean_result.return_code}")
-        logger.warning(
-            "Cleanup failed for %s: %s (continuing to restart)",
-            process_key, detail,
-        )
-
-    # Step 3: Restart
-    logger.info("Restarting %s: %s", process_key, startup_command)
-    result.restart_result = restart_process(startup_command)
-    if not result.restart_result.success:
-        logger.error(
-            "Restart failed for %s: %s",
-            process_key, result.restart_result.error,
-        )
-        result.stage_failed = "restart"
-        return result
-
-    logger.info(
-        "Process %s recovered (new PID: %d)",
-        process_key, result.restart_result.pid,
-    )
     result.fully_recovered = True
+    logger.info("Process %s recovered", process_key)
     return result
+
+
+def _execute_action(
+    action: str,
+    process_key: str,
+    pid: int | None,
+    commands: dict,
+) -> KillResult | CleanResult | RestartResult:
+    """Execute a single recovery action."""
+    if action == "kill":
+        if pid is not None:
+            logger.info("Killing %s (PID %d)", process_key, pid)
+            return kill_process(pid)
+        logger.info("No PID for %s, skipping kill", process_key)
+        return KillResult(success=True, pid=0)
+
+    if action == "start":
+        cmd = commands["start"]
+        logger.info("Starting %s: %s", process_key, cmd)
+        return restart_process(cmd)
+
+    # Generic script action (clear_db, clear_email_logs, etc.)
+    script = commands[action]
+    logger.info("Running %s for %s: %s", action, process_key, script)
+    return run_cleanup(script)

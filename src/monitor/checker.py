@@ -22,14 +22,13 @@ def is_pid_alive(pid: int) -> bool:
 def check_process(
     process_key: str,
     process_config: dict,
-    heartbeat_dir: Path,
 ) -> CheckResult:
     """Check a single process's health via its heartbeat file."""
-    filename = process_config["heartbeat_filename"]
+    heartbeat_path = Path(process_config["heartbeat_path"])
     timeout = process_config["timeout_seconds"]
     display = process_config["display_name"]
 
-    heartbeat = read_heartbeat(heartbeat_dir / filename)
+    heartbeat = read_heartbeat(heartbeat_path)
 
     if heartbeat is None:
         return CheckResult(
@@ -65,12 +64,11 @@ def check_process(
 
 def check_all_processes(config: dict) -> MonitorReport:
     """Check all enabled processes and return a MonitorReport."""
-    heartbeat_dir = Path(config["heartbeat_dir"])
     enabled = get_process_configs(config)
 
     report = MonitorReport(timestamp=datetime.now(timezone.utc))
     for key, proc_config in enabled.items():
-        result = check_process(key, proc_config, heartbeat_dir)
+        result = check_process(key, proc_config)
         report.results.append(result)
 
     return report
