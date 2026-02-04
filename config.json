@@ -1,6 +1,8 @@
 {
   "heartbeat_dir": "/Users/work/Desktop/Folders/Projects/Watchdog/heartbeats",
   "log_level": "INFO",
+  "db_path": "/Users/work/Desktop/Folders/Projects/Watchdog/watchdog.db",
+  "consecutive_failures_threshold": 2,
   "processes": {
     "gmail_as_server": {
       "display_name": "GmailAsServer",

@@ -10,7 +10,13 @@ from src.config.config_loader import (
     get_process_configs,
     validate_config,
 )
-from src.config.constants import ProcessHealth, LOCK_FILE_PATH
+from src.config.constants import (
+    ProcessHealth,
+    LOCK_FILE_PATH,
+    DEFAULT_DB_PATH,
+    DEFAULT_CONSECUTIVE_FAILURES,
+)
+from src.database.store import WatchdogStore
 from src.logging.logger import setup_logging, get_logger
 from src.monitor.checker import check_all_processes
 from src.pipeline.recovery_pipeline import run_recovery
@@ -49,20 +55,33 @@ def main(config_path: str = "config.json") -> int:
         logger.info("Another Watchdog instance is running, exiting")
         return 0
 
+    db_path = config.get("db_path", DEFAULT_DB_PATH)
+    threshold = config.get("consecutive_failures_threshold", DEFAULT_CONSECUTIVE_FAILURES)
+    store = WatchdogStore(db_path)
+
     try:
-        return _run_checks(config)
+        return _run_checks(config, store, threshold)
     finally:
+        store.close()
         lock.close()
 
 
-def _run_checks(config: dict) -> int:
+def _run_checks(config: dict, store: WatchdogStore, threshold: int) -> int:
     """Check all processes and recover unhealthy ones."""
     report = check_all_processes(config)
     enabled = get_process_configs(config)
     any_failed = False
 
     for result in report.results:
+        heartbeat_ts = (
+            result.last_heartbeat.isoformat() if result.last_heartbeat else None
+        )
+
         if result.health == ProcessHealth.HEALTHY:
+            store.record_check(
+                result.process_key, result.health.value,
+                result.pid, heartbeat_ts, None,
+            )
             logger.info("%s: healthy", result.display_name)
             continue
 
@@ -72,6 +91,24 @@ def _run_checks(config: dict) -> int:
             result.pid, result.elapsed_seconds,
         )
 
+        failures = store.record_check(
+            result.process_key, result.health.value,
+            result.pid, heartbeat_ts, None,
+            action="waiting_for_consecutive" if threshold > 1 else None,
+        )
+
+        if failures < threshold:
+            logger.info(
+                "%s: failure %d/%d, waiting before recovery",
+                result.display_name, failures, threshold,
+            )
+            continue
+
+        logger.warning(
+            "%s: %d consecutive failures, triggering recovery",
+            result.display_name, failures,
+        )
+
         proc_config = enabled[result.process_key]
         recovery = run_recovery(
             process_key=result.process_key,
@@ -79,7 +116,9 @@ def _run_checks(config: dict) -> int:
             cleanup_script=proc_config["cleanup_script"],
             startup_command=proc_config["startup_command"],
         )
-        if not recovery.fully_recovered:
+        if recovery.fully_recovered:
+            store.reset_failures(result.process_key)
+        else:
             any_failed = True
 
     logger.info(

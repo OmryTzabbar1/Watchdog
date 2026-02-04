@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-CRON_INTERVAL = "*/2"
+CRON_INTERVAL = "*"
 MARKER = "# watchdog-supervisor"
 
 
@@ -92,7 +92,7 @@ def enable():
         new = crontab.rstrip("\n") + "\n" + active_line + "\n"
 
     if _write_crontab(new):
-        print("Watchdog cron ENABLED (runs every 2 minutes).")
+        print("Watchdog cron ENABLED (runs every 1 minute).")
 
 
 def disable():
