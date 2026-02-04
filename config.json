@@ -5,7 +5,7 @@
     "gmail_as_server": {
       "display_name": "GmailAsServer",
       "timeout_seconds": 300,
-      "startup_command": "cd /Users/work/Desktop/Folders/Projects/GmailAsServerRami/GmailAsServer && python3 -m src.cli.main scan -s periodic",
+      "startup_command": "cd /Users/work/Desktop/Folders/Projects/GmailAsServerRami/GmailAsServer && set -a && source .env && set +a && python3 -m src.cli.main scan -s periodic",
       "cleanup_script": "/Users/work/Desktop/Folders/Projects/GmailAsServerRami/GmailAsServer/scripts/reset_db.sh",
       "heartbeat_filename": "gmail_as_server.json",
       "enabled": true
@@ -13,7 +13,7 @@
     "gmail_as_referee": {
       "display_name": "GmailAsReferee",
       "timeout_seconds": 300,
-      "startup_command": "cd /Users/work/Desktop/Folders/Projects/GmailAsReferee && python3 -m src.cli.main -s periodic",
+      "startup_command": "cd /Users/work/Desktop/Folders/Projects/GmailAsReferee && set -a && source .env && set +a && python3 -m src.cli.main -s periodic",
       "cleanup_script": "/Users/work/Desktop/Folders/Projects/GmailAsReferee/scripts/reset_db.sh",
       "heartbeat_filename": "gmail_as_referee.json",
       "enabled": true
@@ -21,7 +21,7 @@
     "gmail_as_player": {
       "display_name": "GmailAsPlayer",
       "timeout_seconds": 300,
-      "startup_command": "cd /Users/work/Desktop/Folders/Projects/GmailAsPlayer && python3 -m src.cli.main --watch",
+      "startup_command": "cd /Users/work/Desktop/Folders/Projects/GmailAsPlayer && set -a && source .env && set +a && python3 -m src.cli.main --watch",
       "cleanup_script": "/Users/work/Desktop/Folders/Projects/GmailAsPlayer/scripts/reset_db.sh",
       "heartbeat_filename": "gmail_as_player.json",
       "enabled": true
@@ -29,7 +29,7 @@
     "gmail_as_admin": {
       "display_name": "GmailAsAdmin",
       "timeout_seconds": 300,
-      "startup_command": "cd /Users/work/Desktop/Folders/Projects/GmailAsAdmin && python3 admin_scanner.py",
+      "startup_command": "cd /Users/work/Desktop/Folders/Projects/GmailAsAdmin && set -a && source .env && set +a && python3 admin_scanner.py",
       "cleanup_script": "/Users/work/Desktop/Folders/Projects/GmailAsAdmin/scripts/reset_db.sh",
       "heartbeat_filename": "gmail_as_admin.json",
       "enabled": false
