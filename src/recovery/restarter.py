@@ -26,6 +26,7 @@ def restart_process(
         proc = subprocess.Popen(
             command,
             shell=True,
+            executable="/bin/bash",
             start_new_session=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
