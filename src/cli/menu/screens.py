@@ -3,11 +3,13 @@
 """Dashboard screen for the interactive menu."""
 
 from textual.screen import Screen
-from textual.containers import Container, Horizontal
-from textual.widgets import Header, Footer, Static
+from textual.containers import Container
+from textual.widgets import Header, Footer
 from textual.binding import Binding
 
 from src.cli.menu.widgets import ProcessTable, StatusBar
+from src.cli.menu.actions import start_process, kill_process_by_key
+from src.monitor.checker import check_process
 
 
 class DashboardScreen(Screen):
@@ -52,11 +54,12 @@ class DashboardScreen(Screen):
         data = []
         for key in self.state.get_process_keys():
             proc = self.state.get_process_config(key)
+            result = check_process(key, proc)
             data.append({
                 "key": key,
                 "display_name": self.state.get_display_name(key),
-                "status": "UNKNOWN",
-                "pid": "-",
+                "status": result.health.value,
+                "pid": str(result.pid) if result.pid else "-",
                 "enabled": self.state.is_process_enabled(key),
             })
         return data
@@ -72,6 +75,16 @@ class DashboardScreen(Screen):
             last_check=datetime.now().strftime("%H:%M:%S"),
         )
 
+    def _get_selected_process_key(self) -> str | None:
+        """Get the process key for the selected row."""
+        table = self.query_one("#process-table", ProcessTable)
+        if table.cursor_row is None:
+            return None
+        keys = list(self.state.get_process_keys())
+        if table.cursor_row < len(keys):
+            return keys[table.cursor_row]
+        return None
+
     def action_quit(self) -> None:
         """Quit the application."""
         self.app.exit()
@@ -79,7 +92,6 @@ class DashboardScreen(Screen):
     def action_toggle_cron(self) -> None:
         """Toggle cron on/off."""
         from scripts.install_cron import is_cron_active, toggle_cron
-
         current = is_cron_active()
         toggle_cron(enable=not current)
         self._update_status_bar()
@@ -90,33 +102,32 @@ class DashboardScreen(Screen):
 
     def action_select_process(self) -> None:
         """Open detail screen for selected process."""
-        table = self.query_one("#process-table", ProcessTable)
-        if table.cursor_row is not None:
-            row_key = table.get_row_at(table.cursor_row)
-            if row_key:
-                key = str(table.get_row_key(row_key))
-                self.app.push_screen("detail", {"process_key": key})
+        from src.cli.menu.detail_screen import ProcessDetailScreen
+        key = self._get_selected_process_key()
+        if key:
+            self.app.push_screen(ProcessDetailScreen(self.state, key))
 
     def on_process_table_process_selected(
         self, event: ProcessTable.ProcessSelected
     ) -> None:
         """Handle process selection from table."""
         from src.cli.menu.detail_screen import ProcessDetailScreen
-
         self.app.push_screen(ProcessDetailScreen(self.state, event.process_key))
 
     def action_start_process(self) -> None:
         """Start the selected process."""
-        self._run_process_action("start")
+        key = self._get_selected_process_key()
+        if key:
+            proc = self.state.get_process_config(key)
+            success, msg = start_process(key, proc)
+            self.notify(msg)
+            self.refresh_data()
 
     def action_kill_process(self) -> None:
         """Kill the selected process."""
-        self._run_process_action("kill")
-
-    def _run_process_action(self, action: str) -> None:
-        """Run an action on the selected process."""
-        table = self.query_one("#process-table", ProcessTable)
-        if table.cursor_row is None:
-            return
-        # Action execution will be implemented with handlers
-        self.refresh_data()
+        key = self._get_selected_process_key()
+        if key:
+            proc = self.state.get_process_config(key)
+            success, msg = kill_process_by_key(key, proc)
+            self.notify(msg)
+            self.refresh_data()
