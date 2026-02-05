@@ -1,3 +1,5 @@
+# Area: CLI Commands
+# PRD: docs/prd-cli-commands.md
 """Watchdog CLI — process supervisor with subcommands."""
 
 import argparse

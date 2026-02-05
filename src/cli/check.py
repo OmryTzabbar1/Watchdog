@@ -1,12 +1,14 @@
+# Area: CLI Commands
+# PRD: docs/prd-cli-commands.md
 """Cron-mode check handler: detect unhealthy processes and recover."""
 
 import fcntl
 from io import IOBase
 
-from src.config.config_loader import get_process_configs
+from src.config.config_loader import get_global_options, get_process_configs
 from src.config.constants import (
     ProcessHealth,
-    LOCK_FILE_PATH,
+    DEFAULT_LOCK_PATH,
     DEFAULT_DB_PATH,
     DEFAULT_CONSECUTIVE_FAILURES,
 )
@@ -18,7 +20,7 @@ from src.pipeline.recovery_pipeline import run_recovery
 logger = get_logger("check")
 
 
-def acquire_lock(lock_path: str = LOCK_FILE_PATH) -> IOBase | None:
+def acquire_lock(lock_path: str = DEFAULT_LOCK_PATH) -> IOBase | None:
     """Acquire an exclusive lock file. Returns file handle or None."""
     try:
         f = open(lock_path, "w")
@@ -30,7 +32,8 @@ def acquire_lock(lock_path: str = LOCK_FILE_PATH) -> IOBase | None:
 
 def handle_check(config: dict) -> int:
     """Cron mode: check all processes, recover unhealthy ones."""
-    lock = acquire_lock()
+    global_opts = get_global_options(config)
+    lock = acquire_lock(global_opts["lock_path"])
     if lock is None:
         logger.info("Another Watchdog instance is running, exiting")
         return 0
@@ -42,13 +45,15 @@ def handle_check(config: dict) -> int:
     store = WatchdogStore(db_path)
 
     try:
-        return _run_checks(config, store, threshold)
+        return _run_checks(config, store, threshold, global_opts)
     finally:
         store.close()
         lock.close()
 
 
-def _run_checks(config: dict, store: WatchdogStore, threshold: int) -> int:
+def _run_checks(
+    config: dict, store: WatchdogStore, threshold: int, global_opts: dict
+) -> int:
     """Check all processes and recover unhealthy ones."""
     report = check_all_processes(config)
     enabled = get_process_configs(config)
@@ -96,6 +101,7 @@ def _run_checks(config: dict, store: WatchdogStore, threshold: int) -> int:
             process_key=result.process_key,
             pid=result.pid,
             proc_config=proc_config,
+            global_opts=global_opts,
         )
         if recovery.fully_recovered:
             store.reset_failures(result.process_key)

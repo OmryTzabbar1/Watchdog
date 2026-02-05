@@ -1,5 +1,7 @@
 # Watchdog
 
+Version: 1.0.0
+
 A modular, config-driven process supervisor for monitoring and recovering long-running services via heartbeat files.
 
 ## Overview

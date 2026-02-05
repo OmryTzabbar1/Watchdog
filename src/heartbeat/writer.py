@@ -1,3 +1,5 @@
+# Area: Heartbeat Monitoring
+# PRD: docs/prd-heartbeat-monitoring.md
 """Heartbeat writer library for monitored processes.
 
 This module is designed to be imported by sibling projects.

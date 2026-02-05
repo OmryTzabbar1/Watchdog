@@ -1,3 +1,5 @@
+# Area: Logging
+# PRD: docs/prd-logging.md
 """Logging setup for Watchdog with console and file handlers."""
 
 import logging

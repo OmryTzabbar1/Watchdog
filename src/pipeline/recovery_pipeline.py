@@ -1,3 +1,5 @@
+# Area: Recovery Pipeline
+# PRD: docs/prd-recovery-pipeline.md
 """Orchestrate config-driven recovery pipeline."""
 
 from dataclasses import dataclass, field
@@ -37,6 +39,7 @@ def run_recovery(
     process_key: str,
     pid: int | None,
     proc_config: dict,
+    global_opts: dict | None = None,
 ) -> PipelineResult:
     """Execute recovery actions defined in proc_config.
 
@@ -47,9 +50,10 @@ def run_recovery(
     result = PipelineResult(process_key=process_key)
     actions = proc_config.get("recovery_actions", DEFAULT_RECOVERY_ACTIONS)
     commands = proc_config.get("commands", {})
+    opts = global_opts or {}
 
     for action in actions:
-        action_result = _execute_action(action, process_key, pid, commands)
+        action_result = _execute_action(action, process_key, pid, commands, opts)
         result.action_results.append((action, action_result))
 
         if not action_result.success:
@@ -75,21 +79,26 @@ def _execute_action(
     process_key: str,
     pid: int | None,
     commands: dict,
+    opts: dict,
 ) -> KillResult | CleanResult | RestartResult:
     """Execute a single recovery action."""
     if action == "kill":
         if pid is not None:
             logger.info("Killing %s (PID %d)", process_key, pid)
-            return kill_process(pid)
+            timeout = opts.get("kill_timeout", 10.0)
+            return kill_process(pid, timeout=timeout)
         logger.info("No PID for %s, skipping kill", process_key)
         return KillResult(success=True, pid=0)
 
     if action == "start":
         cmd = commands["start"]
         logger.info("Starting %s: %s", process_key, cmd)
-        return restart_process(cmd)
+        verify_delay = opts.get("verify_delay", 2.0)
+        return restart_process(cmd, verify_delay=verify_delay)
 
     # Generic script action (clear_db, clear_email_logs, etc.)
     script = commands[action]
     logger.info("Running %s for %s: %s", action, process_key, script)
-    return run_cleanup(script)
+    timeout = opts.get("cleanup_timeout", 60.0)
+    args = opts.get("cleanup_args")
+    return run_cleanup(script, timeout=timeout, args=args)

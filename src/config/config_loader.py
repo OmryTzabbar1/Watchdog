@@ -1,3 +1,5 @@
+# Area: Configuration
+# PRD: docs/prd-configuration.md
 """Load and validate Watchdog configuration from JSON."""
 
 import json
@@ -5,7 +7,13 @@ from pathlib import Path
 
 from src.config.constants import (
     BUILTIN_ACTIONS,
+    DEFAULT_CLEANUP_ARGS,
+    DEFAULT_CLEANUP_TIMEOUT,
+    DEFAULT_KILL_TIMEOUT,
+    DEFAULT_LOCK_PATH,
+    DEFAULT_LOG_DIR,
     DEFAULT_RECOVERY_ACTIONS,
+    DEFAULT_VERIFY_DELAY,
     REQUIRED_PROCESS_FIELDS,
 )
 
@@ -17,6 +25,18 @@ def load_config(config_path: str) -> dict:
         raise FileNotFoundError(f"Config file not found: {config_path}")
     with open(path) as f:
         return json.load(f)
+
+
+def get_global_options(config: dict) -> dict:
+    """Extract global options with defaults for lock_path, log_dir, timeouts."""
+    return {
+        "lock_path": config.get("lock_path", DEFAULT_LOCK_PATH),
+        "log_dir": config.get("log_dir", DEFAULT_LOG_DIR),
+        "kill_timeout": config.get("kill_timeout", DEFAULT_KILL_TIMEOUT),
+        "cleanup_timeout": config.get("cleanup_timeout", DEFAULT_CLEANUP_TIMEOUT),
+        "verify_delay": config.get("verify_delay", DEFAULT_VERIFY_DELAY),
+        "cleanup_args": config.get("cleanup_args", DEFAULT_CLEANUP_ARGS),
+    }
 
 
 def normalize_process_config(proc: dict) -> dict:

@@ -1,3 +1,5 @@
+# Area: State Management
+# PRD: docs/prd-state-management.md
 """SQLite store for tracking process check history and consecutive failures."""
 
 import sqlite3

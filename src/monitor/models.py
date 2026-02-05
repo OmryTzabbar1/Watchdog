@@ -1,3 +1,5 @@
+# Area: Heartbeat Monitoring
+# PRD: docs/prd-heartbeat-monitoring.md
 """Data models for monitoring results."""
 
 from dataclasses import dataclass, field

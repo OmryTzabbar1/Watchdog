@@ -56,7 +56,7 @@ class TestHandleOn:
         )
         code = handle_on(config, "server")
         assert code == 0
-        mock_restart.assert_called_once_with("python server.py")
+        mock_restart.assert_called_once_with("python server.py", verify_delay=2.0)
 
     @patch("src.cli.handlers.restart_process")
     def test_start_failure(self, mock_restart, config):
@@ -81,7 +81,7 @@ class TestHandleOff:
         mock_kill.return_value = KillResult(success=True, pid=1234)
         code = handle_off(config, "server")
         assert code == 0
-        mock_kill.assert_called_once_with(1234)
+        mock_kill.assert_called_once_with(1234, timeout=10.0)
 
     @patch("src.cli.handlers.read_heartbeat")
     def test_no_heartbeat(self, mock_hb, config):

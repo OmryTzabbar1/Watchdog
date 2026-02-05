@@ -1,3 +1,5 @@
+# Area: Heartbeat Monitoring
+# PRD: docs/prd-heartbeat-monitoring.md
 """Timeout detection logic for monitored processes."""
 
 import os

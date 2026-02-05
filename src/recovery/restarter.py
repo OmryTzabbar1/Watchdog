@@ -1,3 +1,5 @@
+# Area: Recovery Pipeline
+# PRD: docs/prd-recovery-pipeline.md
 """Restart a process using a shell command (detached)."""
 
 import subprocess

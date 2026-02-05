@@ -1,3 +1,5 @@
+# Area: Heartbeat Monitoring
+# PRD: docs/prd-heartbeat-monitoring.md
 """Read and parse heartbeat files written by monitored processes."""
 
 import json

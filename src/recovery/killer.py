@@ -1,3 +1,5 @@
+# Area: Recovery Pipeline
+# PRD: docs/prd-recovery-pipeline.md
 """Kill a process by PID with SIGTERM -> SIGKILL escalation."""
 
 import os

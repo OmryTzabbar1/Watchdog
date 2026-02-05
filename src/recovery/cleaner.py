@@ -1,3 +1,5 @@
+# Area: Recovery Pipeline
+# PRD: docs/prd-recovery-pipeline.md
 """Run per-project cleanup scripts via subprocess."""
 
 import subprocess
@@ -14,11 +16,14 @@ class CleanResult:
     error: str | None = None
 
 
-def run_cleanup(script_path: str, timeout: float = 60.0) -> CleanResult:
+def run_cleanup(
+    script_path: str, timeout: float = 60.0, args: list[str] | None = None
+) -> CleanResult:
     """Execute a cleanup script. Returns CleanResult with output."""
+    cmd_args = args if args is not None else ["--force"]
     try:
         result = subprocess.run(
-            [script_path, "--force"],
+            [script_path] + cmd_args,
             capture_output=True,
             text=True,
             timeout=timeout,

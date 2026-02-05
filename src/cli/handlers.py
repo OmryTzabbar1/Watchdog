@@ -1,8 +1,14 @@
+# Area: CLI Commands
+# PRD: docs/prd-cli-commands.md
 """Command handlers for the Watchdog CLI."""
 
 from pathlib import Path
 
-from src.config.config_loader import get_process_configs, get_single_process_config
+from src.config.config_loader import (
+    get_global_options,
+    get_process_configs,
+    get_single_process_config,
+)
 from src.heartbeat.reader import read_heartbeat
 from src.logging.logger import get_logger
 from src.pipeline.recovery_pipeline import run_recovery
@@ -24,8 +30,9 @@ def handle_on(config: dict, process_key: str) -> int:
         logger.error("No start command for %s", process_key)
         return 2
 
+    opts = get_global_options(config)
     logger.info("Starting %s", process_key)
-    result = restart_process(command)
+    result = restart_process(command, verify_delay=opts["verify_delay"])
     if result.success:
         logger.info("%s started (PID %d)", process_key, result.pid)
         return 0
@@ -45,8 +52,9 @@ def handle_off(config: dict, process_key: str) -> int:
         logger.warning("No heartbeat for %s, nothing to kill", process_key)
         return 0
 
+    opts = get_global_options(config)
     logger.info("Killing %s (PID %d)", process_key, heartbeat.pid)
-    result = kill_process(heartbeat.pid)
+    result = kill_process(heartbeat.pid, timeout=opts["kill_timeout"])
     if result.success:
         logger.info("%s stopped", process_key)
         return 0
@@ -64,7 +72,8 @@ def handle_restart(config: dict, process_key: str) -> int:
     heartbeat = read_heartbeat(Path(proc["heartbeat_path"]))
     pid = heartbeat.pid if heartbeat else None
 
-    result = run_recovery(process_key, pid, proc)
+    opts = get_global_options(config)
+    result = run_recovery(process_key, pid, proc, global_opts=opts)
     return 0 if result.fully_recovered else 1
 
 
