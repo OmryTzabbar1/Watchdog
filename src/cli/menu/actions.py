@@ -65,7 +65,7 @@ def clear_db_by_key(process_key: str, proc: dict) -> tuple[bool, str]:
     cmd = proc.get("commands", {}).get("clear_db")
     if not cmd:
         return False, f"No clear_db command for {process_key}"
-    result = run_cleanup(cmd, timeout=60.0, args=[])
+    result = run_cleanup(cmd, timeout=60.0, args=["--force"])
     if result.success:
         return True, f"Cleared DB for {process_key}"
     return False, f"Failed to clear DB for {process_key}: {result.error}"
