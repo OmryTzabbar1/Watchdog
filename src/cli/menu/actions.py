@@ -86,8 +86,9 @@ def clear_db_by_key(process_key: str, proc: dict) -> tuple[bool, str]:
 
 
 def recover_process_by_key(process_key: str, proc: dict) -> tuple[bool, str]:
-    """Full recovery: kill → clear_db → start. Returns (success, message)."""
+    """Full recovery: kill → clear_emails → clear_db → start. Returns (success, message)."""
     kill_process_by_key(process_key, proc)
+    clear_emails_by_key(process_key, proc)
     clear_db_by_key(process_key, proc)
     success, msg = start_process(process_key, proc)
     if success:

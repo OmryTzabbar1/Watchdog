@@ -174,20 +174,24 @@ class TestRecoverProcessByKey:
 
     @patch("src.cli.menu.actions.start_process")
     @patch("src.cli.menu.actions.clear_db_by_key")
+    @patch("src.cli.menu.actions.clear_emails_by_key")
     @patch("src.cli.menu.actions.kill_process_by_key")
-    def test_recover_runs_full_pipeline(self, mock_kill, mock_clear, mock_start, mock_proc):
+    def test_recover_runs_full_pipeline(self, mock_kill, mock_emails, mock_db, mock_start, mock_proc):
         mock_kill.return_value = (True, "Killed")
-        mock_clear.return_value = (True, "Cleared")
+        mock_emails.return_value = (True, "Emails cleared")
+        mock_db.return_value = (True, "DB cleared")
         mock_start.return_value = (True, "Started")
         success, msg = recover_process_by_key("test", mock_proc)
         assert success is True and "Recovered" in msg
 
     @patch("src.cli.menu.actions.start_process")
     @patch("src.cli.menu.actions.clear_db_by_key")
+    @patch("src.cli.menu.actions.clear_emails_by_key")
     @patch("src.cli.menu.actions.kill_process_by_key")
-    def test_recover_fails_if_start_fails(self, mock_kill, mock_clear, mock_start, mock_proc):
+    def test_recover_fails_if_start_fails(self, mock_kill, mock_emails, mock_db, mock_start, mock_proc):
         mock_kill.return_value = (True, "Killed")
-        mock_clear.return_value = (True, "Cleared")
+        mock_emails.return_value = (True, "Emails cleared")
+        mock_db.return_value = (True, "DB cleared")
         mock_start.return_value = (False, "Failed")
         success, msg = recover_process_by_key("test", mock_proc)
         assert success is False
