@@ -27,6 +27,14 @@ def load_config(config_path: str) -> dict:
         return json.load(f)
 
 
+def save_config(config: dict, config_path: str) -> None:
+    """Save config dict to JSON file."""
+    path = Path(config_path)
+    with open(path, "w") as f:
+        json.dump(config, f, indent=2)
+        f.write("\n")
+
+
 def get_global_options(config: dict) -> dict:
     """Extract global options with defaults for lock_path, log_dir, timeouts."""
     return {
@@ -80,6 +88,13 @@ def get_single_process_config(config: dict, process_key: str) -> dict | None:
     if proc is None:
         return None
     return normalize_process_config(proc)
+
+
+def get_effective_recovery_actions(proc: dict) -> list[str]:
+    """Return recovery actions with disabled ones filtered out."""
+    actions = proc.get("recovery_actions", DEFAULT_RECOVERY_ACTIONS)
+    disabled = set(proc.get("disabled_actions", []))
+    return [a for a in actions if a not in disabled]
 
 
 def validate_config(config: dict) -> list[str]:

@@ -59,6 +59,57 @@ def show():
     print()
 
 
+def is_cron_active() -> bool:
+    """Check if Watchdog cron is currently active (not commented, not missing)."""
+    found = _find_line(_read_crontab())
+    if found is None:
+        return False
+    _, line = found
+    return not line.lstrip().startswith("#")
+
+
+def toggle_cron(enable: bool) -> tuple[bool, str]:
+    """Enable or disable cron. Returns (success, message)."""
+    crontab = _read_crontab()
+    found = _find_line(crontab)
+
+    if enable:
+        if found is None:
+            # Not installed, add new line
+            log_dir = PROJECT_ROOT / "logs"
+            log_dir.mkdir(exist_ok=True)
+            active_line = get_cron_line()
+            new = crontab.rstrip("\n") + "\n" + active_line + "\n"
+            if _write_crontab(new):
+                return True, "Cron enabled"
+            return False, "Failed to write crontab"
+
+        idx, existing = found
+        if not existing.lstrip().startswith("#"):
+            return True, "Cron already active"
+
+        # Uncomment the line
+        lines = crontab.splitlines()
+        lines[idx] = existing.lstrip("#").lstrip()
+        if _write_crontab("\n".join(lines) + "\n"):
+            return True, "Cron enabled"
+        return False, "Failed to write crontab"
+    else:
+        if found is None:
+            return True, "Cron not installed"
+
+        idx, existing = found
+        if existing.lstrip().startswith("#"):
+            return True, "Cron already disabled"
+
+        # Comment out the line
+        lines = crontab.splitlines()
+        lines[idx] = f"# {existing}"
+        if _write_crontab("\n".join(lines) + "\n"):
+            return True, "Cron disabled"
+        return False, "Failed to write crontab"
+
+
 def status():
     found = _find_line(_read_crontab())
     if found is None:

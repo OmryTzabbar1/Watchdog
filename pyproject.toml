@@ -7,6 +7,9 @@ name = "watchdog-supervisor"
 version = "0.1.0"
 description = "Cron-based process supervisor for Gmail league system"
 requires-python = ">=3.11"
+dependencies = [
+    "textual>=0.47.0",
+]
 
 [project.optional-dependencies]
 dev = [

@@ -42,6 +42,7 @@ Version: 1.0.0
    | Configuration | `docs/prd-configuration.md` | `config/` |
    | State Management | `docs/prd-state-management.md` | `database/` |
    | Logging | `docs/prd-logging.md` | `logging/` |
+   | Interactive Menu | `docs/prd-interactive-menu.md` | `cli/menu/` |
 
 ## Related Projects (Read-Only)
 

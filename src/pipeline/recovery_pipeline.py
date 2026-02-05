@@ -4,7 +4,7 @@
 
 from dataclasses import dataclass, field
 
-from src.config.constants import DEFAULT_RECOVERY_ACTIONS
+from src.config.config_loader import get_effective_recovery_actions
 from src.logging.logger import get_logger
 from src.recovery.killer import KillResult, kill_process
 from src.recovery.cleaner import CleanResult, run_cleanup
@@ -48,7 +48,7 @@ def run_recovery(
     Other action failures warn but continue.
     """
     result = PipelineResult(process_key=process_key)
-    actions = proc_config.get("recovery_actions", DEFAULT_RECOVERY_ACTIONS)
+    actions = get_effective_recovery_actions(proc_config)
     commands = proc_config.get("commands", {})
     opts = global_opts or {}
 
