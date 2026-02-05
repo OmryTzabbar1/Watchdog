@@ -56,6 +56,39 @@
         "clear_emails": "cd /Users/work/Desktop/Folders/Projects/GmailAsAdmin && set -a && source .env && set +a && python3 scripts/clear_emails.py --force"
       },
       "recovery_actions": ["kill", "clear_db", "start"]
+    },
+    "bl300": {
+      "display_name": "beit.halevi.300@gmail.com",
+      "timeout_seconds": 300,
+      "heartbeat_path": "/Users/work/Desktop/Folders/Projects/BL300/heartbeats/bl300.json",
+      "enabled": false,
+      "commands": {
+        "start": "cd /Users/work/Desktop/Folders/Projects/BL300 && set -a && source .env && set +a && python3 -m src.cli.main scan -s periodic",
+        "clear_emails": "cd /Users/work/Desktop/Folders/Projects/BL300 && set -a && source .env && set +a && python3 scripts/clear_emails.py --force"
+      },
+      "recovery_actions": ["kill", "start"]
+    },
+    "user0001_player": {
+      "display_name": "user0001@gtai-tech.org",
+      "timeout_seconds": 300,
+      "heartbeat_path": "/Users/work/Desktop/Folders/Projects/user0001/GmailAsPlayer/heartbeats/user0001_player.json",
+      "enabled": false,
+      "commands": {
+        "start": "cd /Users/work/Desktop/Folders/Projects/user0001/GmailAsPlayer && set -a && source .env && set +a && python3 -m src.cli.main --watch",
+        "clear_emails": "cd /Users/work/Desktop/Folders/Projects/user0001/GmailAsPlayer && set -a && source .env && set +a && python3 scripts/clear_emails.py --force"
+      },
+      "recovery_actions": ["kill", "start"]
+    },
+    "user0002_referee": {
+      "display_name": "user0002@gtai-tech.org",
+      "timeout_seconds": 300,
+      "heartbeat_path": "/Users/work/Desktop/Folders/Projects/user0002/GmailAsReferee/heartbeats/user0002_referee.json",
+      "enabled": false,
+      "commands": {
+        "start": "cd /Users/work/Desktop/Folders/Projects/user0002/GmailAsReferee && set -a && source .env && set +a && python3 -m src.cli.main -s periodic",
+        "clear_emails": "cd /Users/work/Desktop/Folders/Projects/user0002/GmailAsReferee && set -a && source .env && set +a && python3 scripts/clear_emails.py --force"
+      },
+      "recovery_actions": ["kill", "start"]
     }
   }
 }
