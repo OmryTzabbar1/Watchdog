@@ -37,6 +37,8 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("stop-all", help="Stop all enabled processes")
     sub.add_parser("start-all", help="Start all enabled processes")
 
+    sub.add_parser("menu", help="Open interactive TUI menu")
+
     return parser
 
 
@@ -44,6 +46,12 @@ def main(argv: list[str] | None = None) -> int:
     """Main entry point. Returns 0 on success, 1 on failure, 2 on error."""
     parser = build_parser()
     args = parser.parse_args(argv)
+
+    # Menu command runs TUI directly without pre-validation
+    if args.command == "menu":
+        from src.cli.menu.app import run_menu
+        run_menu(config_path=args.config)
+        return 0
 
     try:
         config = load_config(args.config)
