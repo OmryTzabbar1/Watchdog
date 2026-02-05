@@ -7,6 +7,7 @@ from pathlib import Path
 from src.heartbeat.reader import read_heartbeat
 from src.recovery.killer import kill_process
 from src.recovery.restarter import restart_process
+from src.recovery.cleaner import run_cleanup
 
 
 def start_process(process_key: str, proc: dict) -> tuple[bool, str]:
@@ -57,6 +58,37 @@ def stop_all(state) -> tuple[int, int, list[str]]:
 def restart_all(state) -> tuple[int, int, list[str]]:
     """Restart all enabled processes. Returns (success_count, fail_count, messages)."""
     return _bulk_action(state, restart_process_by_key)
+
+
+def clear_db_by_key(process_key: str, proc: dict) -> tuple[bool, str]:
+    """Run clear_db script for a process. Returns (success, message)."""
+    cmd = proc.get("commands", {}).get("clear_db")
+    if not cmd:
+        return False, f"No clear_db command for {process_key}"
+    result = run_cleanup(cmd, timeout=60.0, args=[])
+    if result.success:
+        return True, f"Cleared DB for {process_key}"
+    return False, f"Failed to clear DB for {process_key}: {result.error}"
+
+
+def recover_process_by_key(process_key: str, proc: dict) -> tuple[bool, str]:
+    """Full recovery: kill → clear_db → start. Returns (success, message)."""
+    kill_process_by_key(process_key, proc)
+    clear_db_by_key(process_key, proc)
+    success, msg = start_process(process_key, proc)
+    if success:
+        return True, f"Recovered {process_key}"
+    return False, f"Recovery failed for {process_key}: {msg}"
+
+
+def clear_db_all(state) -> tuple[int, int, list[str]]:
+    """Clear DB for all enabled processes."""
+    return _bulk_action(state, clear_db_by_key)
+
+
+def recover_all(state) -> tuple[int, int, list[str]]:
+    """Full recovery for all enabled processes."""
+    return _bulk_action(state, recover_process_by_key)
 
 
 def _bulk_action(state, action_fn) -> tuple[int, int, list[str]]:

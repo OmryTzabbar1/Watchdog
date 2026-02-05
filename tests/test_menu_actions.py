@@ -9,9 +9,13 @@ from src.cli.menu.actions import (
     start_process,
     kill_process_by_key,
     restart_process_by_key,
+    clear_db_by_key,
+    recover_process_by_key,
     start_all,
     stop_all,
     restart_all,
+    clear_db_all,
+    recover_all,
 )
 
 
@@ -19,7 +23,7 @@ from src.cli.menu.actions import (
 def mock_proc():
     """Sample process config."""
     return {
-        "commands": {"start": "echo start"},
+        "commands": {"start": "echo start", "clear_db": "echo clear"},
         "heartbeat_path": "/tmp/test.json",
     }
 
@@ -31,7 +35,7 @@ def mock_state():
     state.get_process_keys.return_value = ["proc_a", "proc_b"]
     state.is_process_enabled.return_value = True
     state.get_process_config.side_effect = lambda k: {
-        "commands": {"start": f"echo {k}"},
+        "commands": {"start": f"echo {k}", "clear_db": f"echo clear {k}"},
         "heartbeat_path": f"/tmp/{k}.json",
     }
     return state
@@ -137,17 +141,71 @@ class TestRestartAll:
     @patch("src.cli.menu.actions.restart_process_by_key")
     def test_restart_all_restarts_enabled_processes(self, mock_restart, mock_state):
         mock_restart.return_value = (True, "Restarted")
-
         ok, fail, msgs = restart_all(mock_state)
-
-        assert ok == 2
-        assert fail == 0
+        assert ok == 2 and fail == 0
 
     @patch("src.cli.menu.actions.restart_process_by_key")
     def test_restart_all_counts_failures(self, mock_restart, mock_state):
         mock_restart.side_effect = [(True, "OK"), (False, "Fail")]
-
         ok, fail, msgs = restart_all(mock_state)
+        assert ok == 1 and fail == 1
 
-        assert ok == 1
-        assert fail == 1
+
+class TestClearDbByKey:
+    """Tests for clear_db_by_key."""
+
+    @patch("src.cli.menu.actions.run_cleanup")
+    def test_clear_db_runs_command(self, mock_cleanup, mock_proc):
+        mock_cleanup.return_value = MagicMock(success=True)
+        success, msg = clear_db_by_key("test", mock_proc)
+        assert success is True
+        mock_cleanup.assert_called_once()
+
+    def test_clear_db_no_command(self):
+        proc = {"commands": {}}
+        success, msg = clear_db_by_key("test", proc)
+        assert success is False and "No clear_db" in msg
+
+
+class TestRecoverProcessByKey:
+    """Tests for recover_process_by_key."""
+
+    @patch("src.cli.menu.actions.start_process")
+    @patch("src.cli.menu.actions.clear_db_by_key")
+    @patch("src.cli.menu.actions.kill_process_by_key")
+    def test_recover_runs_full_pipeline(self, mock_kill, mock_clear, mock_start, mock_proc):
+        mock_kill.return_value = (True, "Killed")
+        mock_clear.return_value = (True, "Cleared")
+        mock_start.return_value = (True, "Started")
+        success, msg = recover_process_by_key("test", mock_proc)
+        assert success is True and "Recovered" in msg
+
+    @patch("src.cli.menu.actions.start_process")
+    @patch("src.cli.menu.actions.clear_db_by_key")
+    @patch("src.cli.menu.actions.kill_process_by_key")
+    def test_recover_fails_if_start_fails(self, mock_kill, mock_clear, mock_start, mock_proc):
+        mock_kill.return_value = (True, "Killed")
+        mock_clear.return_value = (True, "Cleared")
+        mock_start.return_value = (False, "Failed")
+        success, msg = recover_process_by_key("test", mock_proc)
+        assert success is False
+
+
+class TestClearDbAll:
+    """Tests for clear_db_all."""
+
+    @patch("src.cli.menu.actions.clear_db_by_key")
+    def test_clear_db_all_clears_enabled(self, mock_clear, mock_state):
+        mock_clear.return_value = (True, "Cleared")
+        ok, fail, msgs = clear_db_all(mock_state)
+        assert ok == 2 and mock_clear.call_count == 2
+
+
+class TestRecoverAll:
+    """Tests for recover_all."""
+
+    @patch("src.cli.menu.actions.recover_process_by_key")
+    def test_recover_all_recovers_enabled(self, mock_recover, mock_state):
+        mock_recover.return_value = (True, "Recovered")
+        ok, fail, msgs = recover_all(mock_state)
+        assert ok == 2 and fail == 0
