@@ -292,11 +292,36 @@ recovery_actions: ["kill", "clear_db", "clear_email_logs", "start"]
 Run Watchdog every minute:
 
 ```bash
-# Install cron job
-python -m src.cli.install_cron
+# Edit crontab
+crontab -e
 
-# Or manually add to crontab:
-# * * * * * cd /path/to/Watchdog && python3 -m src.cli.main >> /tmp/watchdog.log 2>&1
+# Add these lines (adjust paths for your system):
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin:/Library/Frameworks/Python.framework/Versions/3.10/bin
+* * * * * cd /path/to/Watchdog && python3 -m src.cli.main >> /tmp/watchdog.log 2>&1
+```
+
+**Important crontab settings:**
+
+| Setting | Purpose |
+|---------|---------|
+| `SHELL=/bin/bash` | Enables `source` command in start scripts |
+| `PATH=...` | Makes `python3` available to subprocesses |
+
+Without these, recovery may fail because cron uses `/bin/sh` with a minimal PATH.
+
+### Managing the Cron
+
+```bash
+# View current crontab
+crontab -l
+
+# Disable (remove crontab)
+crontab -r
+
+# Quick toggle (comment/uncomment the watchdog line)
+crontab -l | sed 's/^\(\* \* \* \* \* .*watchdog.*\)$/# \1/' | crontab -  # disable
+crontab -l | sed 's/^# \(\* \* \* \* \* .*watchdog.*\)$/\1/' | crontab -  # enable
 ```
 
 ## Project Structure
