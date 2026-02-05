@@ -16,7 +16,8 @@
       "enabled": true,
       "commands": {
         "start": "cd /Users/work/Desktop/Folders/Projects/GmailAsServerRami/GmailAsServer && set -a && source .env && set +a && python3 -m src.cli.main scan -s periodic",
-        "clear_db": "/Users/work/Desktop/Folders/Projects/GmailAsServerRami/GmailAsServer/scripts/reset_db.sh"
+        "clear_db": "/Users/work/Desktop/Folders/Projects/GmailAsServerRami/GmailAsServer/scripts/reset_db.sh",
+        "clear_emails": "cd /Users/work/Desktop/Folders/Projects/GmailAsServerRami/GmailAsServer && set -a && source .env && set +a && python3 scripts/clear_emails.py --force"
       },
       "recovery_actions": ["kill", "clear_db", "start"]
     },
@@ -27,7 +28,8 @@
       "enabled": true,
       "commands": {
         "start": "cd /Users/work/Desktop/Folders/Projects/GmailAsReferee && set -a && source .env && set +a && python3 -m src.cli.main -s periodic",
-        "clear_db": "/Users/work/Desktop/Folders/Projects/GmailAsReferee/scripts/reset_db.sh"
+        "clear_db": "/Users/work/Desktop/Folders/Projects/GmailAsReferee/scripts/reset_db.sh",
+        "clear_emails": "cd /Users/work/Desktop/Folders/Projects/GmailAsReferee && set -a && source .env && set +a && python3 scripts/clear_emails.py --force"
       },
       "recovery_actions": ["kill", "clear_db", "start"]
     },
@@ -38,7 +40,8 @@
       "enabled": true,
       "commands": {
         "start": "cd /Users/work/Desktop/Folders/Projects/GmailAsPlayer && set -a && source .env && set +a && uv run python -m src.cli.main --watch",
-        "clear_db": "/Users/work/Desktop/Folders/Projects/GmailAsPlayer/scripts/reset_db.sh"
+        "clear_db": "/Users/work/Desktop/Folders/Projects/GmailAsPlayer/scripts/reset_db.sh",
+        "clear_emails": "cd /Users/work/Desktop/Folders/Projects/GmailAsPlayer && set -a && source .env && set +a && python3 scripts/clear_emails.py --force"
       },
       "recovery_actions": ["kill", "clear_db", "start"]
     },
@@ -49,7 +52,8 @@
       "enabled": false,
       "commands": {
         "start": "cd /Users/work/Desktop/Folders/Projects/GmailAsAdmin && set -a && source .env && set +a && python3 admin_scanner.py",
-        "clear_db": "/Users/work/Desktop/Folders/Projects/GmailAsAdmin/scripts/reset_db.sh"
+        "clear_db": "/Users/work/Desktop/Folders/Projects/GmailAsAdmin/scripts/reset_db.sh",
+        "clear_emails": "cd /Users/work/Desktop/Folders/Projects/GmailAsAdmin && set -a && source .env && set +a && python3 scripts/clear_emails.py --force"
       },
       "recovery_actions": ["kill", "clear_db", "start"]
     }

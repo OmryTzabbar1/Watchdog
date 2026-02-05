@@ -10,11 +10,13 @@ from src.cli.menu.actions import (
     kill_process_by_key,
     restart_process_by_key,
     clear_db_by_key,
+    clear_emails_by_key,
     recover_process_by_key,
     start_all,
     stop_all,
     restart_all,
     clear_db_all,
+    clear_emails_all,
     recover_all,
 )
 
@@ -23,7 +25,7 @@ from src.cli.menu.actions import (
 def mock_proc():
     """Sample process config."""
     return {
-        "commands": {"start": "echo start", "clear_db": "echo clear"},
+        "commands": {"start": "echo start", "clear_db": "echo clear", "clear_emails": "echo emails"},
         "heartbeat_path": "/tmp/test.json",
     }
 
@@ -35,7 +37,7 @@ def mock_state():
     state.get_process_keys.return_value = ["proc_a", "proc_b"]
     state.is_process_enabled.return_value = True
     state.get_process_config.side_effect = lambda k: {
-        "commands": {"start": f"echo {k}", "clear_db": f"echo clear {k}"},
+        "commands": {"start": f"echo {k}", "clear_db": f"echo clear {k}", "clear_emails": f"echo emails {k}"},
         "heartbeat_path": f"/tmp/{k}.json",
     }
     return state
@@ -209,3 +211,29 @@ class TestRecoverAll:
         mock_recover.return_value = (True, "Recovered")
         ok, fail, msgs = recover_all(mock_state)
         assert ok == 2 and fail == 0
+
+
+class TestClearEmailsByKey:
+    """Tests for clear_emails_by_key."""
+
+    @patch("src.cli.menu.actions.run_shell_command")
+    def test_clear_emails_runs_command(self, mock_run, mock_proc):
+        mock_run.return_value = (True, "OK")
+        success, msg = clear_emails_by_key("test", mock_proc)
+        assert success is True
+        mock_run.assert_called_once()
+
+    def test_clear_emails_no_command(self):
+        proc = {"commands": {}}
+        success, msg = clear_emails_by_key("test", proc)
+        assert success is False and "No clear_emails" in msg
+
+
+class TestClearEmailsAll:
+    """Tests for clear_emails_all."""
+
+    @patch("src.cli.menu.actions.clear_emails_by_key")
+    def test_clear_emails_all_clears_enabled(self, mock_clear, mock_state):
+        mock_clear.return_value = (True, "Cleared")
+        ok, fail, msgs = clear_emails_all(mock_state)
+        assert ok == 2 and mock_clear.call_count == 2

@@ -30,6 +30,8 @@ class DashboardScreen(Screen):
         Binding("R", "restart_all", "Restart All"),
         Binding("D", "clear_db_all", "Clear All DB"),
         Binding("G", "recover_all", "Recover All"),
+        Binding("e", "clear_emails", "Clear Emails"),
+        Binding("E", "clear_emails_all", "Clear All Emails"),
     ]
 
     def __init__(self, state, **kwargs):
@@ -37,17 +39,12 @@ class DashboardScreen(Screen):
         self.state = state
 
     def compose(self):
-        """Create dashboard layout."""
         yield Header()
         yield StatusBar(id="status-bar")
-        yield Container(
-            ProcessTable(id="process-table"),
-            id="main-container",
-        )
+        yield Container(ProcessTable(id="process-table"), id="main-container")
         yield Footer()
 
     def on_mount(self) -> None:
-        """Initialize dashboard."""
         self.refresh_data()
 
     def refresh_data(self) -> None:
@@ -74,17 +71,13 @@ class DashboardScreen(Screen):
             cron_active=is_cron_active(), last_check=datetime.now().strftime("%H:%M:%S"))
 
     def _get_selected_process_key(self) -> str | None:
-        """Get the process key for the selected row."""
         table = self.query_one("#process-table", ProcessTable)
         if table.cursor_row is None:
             return None
         keys = list(self.state.get_process_keys())
-        if table.cursor_row < len(keys):
-            return keys[table.cursor_row]
-        return None
+        return keys[table.cursor_row] if table.cursor_row < len(keys) else None
 
     def action_quit(self) -> None:
-        """Quit the application."""
         self.app.exit()
 
     def action_toggle_cron(self) -> None:
@@ -93,7 +86,6 @@ class DashboardScreen(Screen):
         self._update_status_bar()
 
     def action_refresh(self) -> None:
-        """Refresh the display."""
         self.refresh_data()
 
     def action_select_process(self) -> None:
@@ -135,6 +127,12 @@ class DashboardScreen(Screen):
 
     def action_recover_all(self) -> None:
         self._run_bulk_action(actions.recover_all, "Recovered")
+
+    def action_clear_emails(self) -> None:
+        self._run_selected_action(actions.clear_emails_by_key)
+
+    def action_clear_emails_all(self) -> None:
+        self._run_bulk_action(actions.clear_emails_all, "Cleared emails")
 
     def _run_selected_action(self, action_fn) -> None:
         key = self._get_selected_process_key()

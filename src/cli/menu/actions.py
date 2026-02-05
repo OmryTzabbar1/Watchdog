@@ -2,12 +2,26 @@
 # PRD: docs/prd-interactive-menu.md
 """Action handlers for the interactive menu."""
 
+import subprocess
 from pathlib import Path
 
 from src.heartbeat.reader import read_heartbeat
 from src.recovery.killer import kill_process
 from src.recovery.restarter import restart_process
 from src.recovery.cleaner import run_cleanup
+
+
+def run_shell_command(cmd: str, timeout: float = 120.0) -> tuple[bool, str]:
+    """Run a shell command. Returns (success, output_or_error)."""
+    try:
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=timeout)
+        if result.returncode == 0:
+            return True, result.stdout.strip()
+        return False, result.stderr.strip() or f"Exit code {result.returncode}"
+    except subprocess.TimeoutExpired:
+        return False, f"Command timed out after {timeout}s"
+    except Exception as e:
+        return False, str(e)
 
 
 def start_process(process_key: str, proc: dict) -> tuple[bool, str]:
@@ -89,6 +103,22 @@ def clear_db_all(state) -> tuple[int, int, list[str]]:
 def recover_all(state) -> tuple[int, int, list[str]]:
     """Full recovery for all enabled processes."""
     return _bulk_action(state, recover_process_by_key)
+
+
+def clear_emails_by_key(process_key: str, proc: dict) -> tuple[bool, str]:
+    """Run clear_emails command for a process. Returns (success, message)."""
+    cmd = proc.get("commands", {}).get("clear_emails")
+    if not cmd:
+        return False, f"No clear_emails command for {process_key}"
+    success, output = run_shell_command(cmd, timeout=120.0)
+    if success:
+        return True, f"Cleared emails for {process_key}"
+    return False, f"Failed to clear emails for {process_key}: {output}"
+
+
+def clear_emails_all(state) -> tuple[int, int, list[str]]:
+    """Clear emails for all enabled processes."""
+    return _bulk_action(state, clear_emails_by_key)
 
 
 def _bulk_action(state, action_fn) -> tuple[int, int, list[str]]:

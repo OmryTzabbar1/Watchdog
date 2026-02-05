@@ -1,6 +1,6 @@
 # PRD: Interactive Menu
 
-Version: 1.2.0
+Version: 1.3.0
 
 ## Overview
 
@@ -60,11 +60,13 @@ Per-process `disabled_actions` field:
 | r | Restart process | Restart process |
 | d | Clear DB | - |
 | g | Recover (kill→clear→start) | - |
+| e | Clear emails | - |
 | S (Shift) | Start all | - |
 | K (Shift) | Stop all | - |
 | R (Shift) | Restart all | - |
 | D (Shift) | Clear all DBs | - |
 | G (Shift) | Recover all | - |
+| E (Shift) | Clear all emails | - |
 | f | Refresh display | - |
 | Space | - | Toggle action |
 | e | Toggle enabled | Toggle enabled |
@@ -100,6 +102,7 @@ def toggle_cron(enable: bool) -> tuple[bool, str]:
 
 ## Changelog
 
+- 1.3.0: Add Clear Emails action (e single, E bulk) for Gmail inbox/sent cleanup
 - 1.2.0: Add Clear DB and Recover actions (d/g single, D/G bulk)
 - 1.1.0: Add bulk actions (Start All, Stop All, Restart All) and actions module
 - 1.0.0: Initial PRD for interactive menu feature
