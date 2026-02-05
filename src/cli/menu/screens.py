@@ -8,7 +8,7 @@ from textual.widgets import Header, Footer
 from textual.binding import Binding
 
 from src.cli.menu.widgets import ProcessTable, StatusBar
-from src.cli.menu.actions import start_process, kill_process_by_key
+from src.cli.menu import actions
 from src.monitor.checker import check_process
 
 
@@ -18,10 +18,14 @@ class DashboardScreen(Screen):
     BINDINGS = [
         Binding("q", "quit", "Quit"),
         Binding("c", "toggle_cron", "Toggle Cron"),
-        Binding("r", "refresh", "Refresh"),
+        Binding("f", "refresh", "Refresh"),
         Binding("enter", "select_process", "Details"),
         Binding("s", "start_process", "Start"),
         Binding("k", "kill_process", "Kill"),
+        Binding("r", "restart_process", "Restart"),
+        Binding("S", "start_all", "Start All"),
+        Binding("K", "stop_all", "Stop All"),
+        Binding("R", "restart_all", "Restart All"),
     ]
 
     def __init__(self, state, **kwargs):
@@ -115,19 +119,31 @@ class DashboardScreen(Screen):
         self.app.push_screen(ProcessDetailScreen(self.state, event.process_key))
 
     def action_start_process(self) -> None:
-        """Start the selected process."""
+        self._run_selected_action(actions.start_process)
+
+    def action_kill_process(self) -> None:
+        self._run_selected_action(actions.kill_process_by_key)
+
+    def action_restart_process(self) -> None:
+        self._run_selected_action(actions.restart_process_by_key)
+
+    def action_start_all(self) -> None:
+        self._run_bulk_action(actions.start_all, "Started")
+
+    def action_stop_all(self) -> None:
+        self._run_bulk_action(actions.stop_all, "Stopped")
+
+    def action_restart_all(self) -> None:
+        self._run_bulk_action(actions.restart_all, "Restarted")
+
+    def _run_selected_action(self, action_fn) -> None:
         key = self._get_selected_process_key()
         if key:
-            proc = self.state.get_process_config(key)
-            success, msg = start_process(key, proc)
+            _, msg = action_fn(key, self.state.get_process_config(key))
             self.notify(msg)
             self.refresh_data()
 
-    def action_kill_process(self) -> None:
-        """Kill the selected process."""
-        key = self._get_selected_process_key()
-        if key:
-            proc = self.state.get_process_config(key)
-            success, msg = kill_process_by_key(key, proc)
-            self.notify(msg)
-            self.refresh_data()
+    def _run_bulk_action(self, action_fn, verb: str) -> None:
+        ok, fail, _ = action_fn(self.state)
+        self.notify(f"{verb} {ok} processes ({fail} failed)")
+        self.refresh_data()

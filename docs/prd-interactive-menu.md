@@ -1,6 +1,6 @@
 # PRD: Interactive Menu
 
-Version: 1.0.0
+Version: 1.1.0
 
 ## Overview
 
@@ -15,11 +15,13 @@ The Interactive Menu feature provides a Terminal User Interface (TUI) for managi
 | DetailScreen | `src/cli/menu/detail_screen.py` | Process detail screen |
 | Widgets | `src/cli/menu/widgets.py` | Custom TUI widgets |
 | State | `src/cli/menu/state.py` | State management and persistence |
+| Actions | `src/cli/menu/actions.py` | Process control action handlers |
 
 ## Features
 
 ### Process Controls
 - Start/stop/restart individual processes
+- Bulk actions: Start All, Stop All, Restart All (Shift+S/K/R)
 - Toggle process enabled/disabled state
 - View real-time health status with auto-refresh
 
@@ -53,14 +55,18 @@ Per-process `disabled_actions` field:
 |-----|-----------|---------------|
 | Up/Down | Navigate processes | Navigate actions |
 | Enter | Open details | - |
-| S | Start process | Start process |
-| K | Kill process | Kill process |
-| R | Restart process | Restart process |
+| s | Start process | Start process |
+| k | Kill process | Kill process |
+| r | Restart process | Restart process |
+| S (Shift) | Start all | - |
+| K (Shift) | Stop all | - |
+| R (Shift) | Restart all | - |
+| f | Refresh display | - |
 | Space | - | Toggle action |
-| E | Toggle enabled | Toggle enabled |
-| C | Toggle cron | - |
-| B | - | Back |
-| Q | Quit | Quit |
+| e | Toggle enabled | Toggle enabled |
+| c | Toggle cron | - |
+| b | - | Back |
+| q | Quit | Quit |
 
 ## Dependencies
 
@@ -90,4 +96,5 @@ def toggle_cron(enable: bool) -> tuple[bool, str]:
 
 ## Changelog
 
+- 1.1.0: Add bulk actions (Start All, Stop All, Restart All) and actions module
 - 1.0.0: Initial PRD for interactive menu feature
