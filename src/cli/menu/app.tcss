@@ -1,0 +1,68 @@
+/* Area: Interactive Menu */
+/* PRD: docs/prd-interactive-menu.md */
+/* Textual CSS for Watchdog menu */
+
+Screen {
+    background: $surface;
+}
+
+#status-bar {
+    dock: top;
+    height: 1;
+    background: $primary;
+    color: $text;
+    padding: 0 1;
+}
+
+#main-container {
+    width: 100%;
+    height: 100%;
+    padding: 1;
+}
+
+#process-table {
+    width: 100%;
+    height: 100%;
+}
+
+#detail-container {
+    width: 100%;
+    height: 100%;
+    padding: 1;
+}
+
+#info-section {
+    height: auto;
+    padding: 1;
+    border: solid $primary;
+    margin-bottom: 1;
+}
+
+#process-name {
+    text-style: bold;
+}
+
+#actions-section {
+    height: auto;
+    padding: 1;
+    border: solid $secondary;
+}
+
+#actions-label {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+ActionToggle {
+    height: 1;
+    padding: 0 1;
+}
+
+ActionToggle:hover {
+    background: $primary-lighten-2;
+}
+
+DataTable > .datatable--cursor {
+    background: $primary;
+    color: $text;
+}
