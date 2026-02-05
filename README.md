@@ -297,7 +297,7 @@ crontab -e
 
 # Add these lines (adjust paths for your system):
 SHELL=/bin/bash
-PATH=/usr/local/bin:/usr/bin:/bin:/Library/Frameworks/Python.framework/Versions/3.10/bin
+PATH=/opt/homebrew/bin:/opt/homebrew/opt/postgresql@15/bin:/usr/local/bin:/usr/bin:/bin:/Library/Frameworks/Python.framework/Versions/3.10/bin
 * * * * * cd /path/to/Watchdog && python3 -m src.cli.main >> /tmp/watchdog.log 2>&1
 ```
 
