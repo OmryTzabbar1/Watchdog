@@ -10,7 +10,7 @@
   "cleanup_args": ["--force"],
   "processes": {
     "gmail_as_server": {
-      "display_name": "GmailAsServer",
+      "display_name": "beit.halevi.100@gmail.com",
       "timeout_seconds": 300,
       "heartbeat_path": "/Users/work/Desktop/Folders/Projects/GmailAsServerRami/GmailAsServer/heartbeats/gmail_as_server.json",
       "enabled": true,
@@ -22,7 +22,7 @@
       "recovery_actions": ["kill", "clear_db", "start"]
     },
     "gmail_as_referee": {
-      "display_name": "GmailAsReferee",
+      "display_name": "koshertime.llc@gmail.com",
       "timeout_seconds": 300,
       "heartbeat_path": "/Users/work/Desktop/Folders/Projects/GmailAsReferee/heartbeats/gmail_as_referee.json",
       "enabled": true,
@@ -34,7 +34,7 @@
       "recovery_actions": ["kill", "clear_db", "start"]
     },
     "gmail_as_player": {
-      "display_name": "GmailAsPlayer",
+      "display_name": "beit.halevi.200@gmail.com",
       "timeout_seconds": 300,
       "heartbeat_path": "/Users/work/Desktop/Folders/Projects/GmailAsPlayer/heartbeats/gmail_as_player.json",
       "enabled": true,
