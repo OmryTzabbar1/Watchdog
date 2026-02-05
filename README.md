@@ -1,6 +1,6 @@
 # Watchdog
 
-Version: 1.0.0
+Version: 1.1.0
 
 A modular, config-driven process supervisor for monitoring and recovering long-running services via heartbeat files.
 
@@ -235,21 +235,37 @@ writer = HeartbeatWriter(
 
 # In your main loop
 while running:
-    do_work()
-    writer.beat()  # Write heartbeat after each iteration
+    try:
+        do_work()
+        writer.beat()  # Write heartbeat with status="running"
+    except ConnectionError as e:
+        writer.beat(status="error")  # Report error to Watchdog
+        log.error(f"Connection failed: {e}")
 
 # On clean shutdown
 writer.stop()  # Removes heartbeat file
 ```
 
+### Reporting Errors via Status
+
+Monitored processes can signal errors by setting `status="error"` in their heartbeat:
+
+```python
+# When an error occurs (e.g., Gmail connection fails)
+writer.beat(status="error")
+```
+
+Watchdog will detect `status != "running"` and treat the process as unhealthy, triggering recovery after the consecutive failure threshold is reached. This allows recovery even when the process is still running but not functioning correctly.
+
 ### Health States
 
 | State | Condition |
 |-------|-----------|
-| `HEALTHY` | Heartbeat exists, PID alive, timestamp within timeout |
+| `HEALTHY` | Heartbeat exists, PID alive, timestamp within timeout, status is "running" |
 | `TIMED_OUT` | Heartbeat exists but timestamp is older than `timeout_seconds` |
 | `NO_HEARTBEAT` | Heartbeat file does not exist |
 | `STALE_PID` | Heartbeat exists but the PID is no longer running |
+| `ERROR_STATUS` | Heartbeat exists but status is not "running" (e.g., "error") |
 
 ## Recovery Pipeline
 

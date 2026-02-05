@@ -10,6 +10,7 @@ class ProcessHealth(Enum):
     TIMED_OUT = "timed_out"
     NO_HEARTBEAT = "no_heartbeat"
     STALE_PID = "stale_pid"
+    ERROR_STATUS = "error_status"
 
 
 DEFAULT_TIMEOUT_SECONDS = 300

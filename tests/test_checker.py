@@ -23,13 +23,13 @@ def process_config(tmp_path):
     }
 
 
-def _write_heartbeat(path, timestamp, pid=None):
+def _write_heartbeat(path, timestamp, pid=None, status="running"):
     """Helper to write a heartbeat file for testing."""
     Path(path).write_text(json.dumps({
         "process_key": "test_server",
         "pid": pid or os.getpid(),
         "timestamp": timestamp.isoformat(),
-        "status": "running",
+        "status": status,
         "iteration": 1,
     }))
 
@@ -66,6 +66,16 @@ def test_stale_pid(process_config):
         result = check_process("test_server", process_config)
     assert result.health == ProcessHealth.STALE_PID
     assert result.pid == 999999
+
+
+def test_error_status(process_config):
+    """Process with status != 'running' should be detected as ERROR_STATUS."""
+    now = datetime.now(timezone.utc)
+    _write_heartbeat(process_config["heartbeat_path"], now, status="error")
+
+    result = check_process("test_server", process_config)
+    assert result.health == ProcessHealth.ERROR_STATUS
+    assert result.pid == os.getpid()
 
 
 def test_check_all_processes(tmp_path):

@@ -40,15 +40,20 @@ class HeartbeatWriter:
         self._path = self._dir / filename
         self._iteration = 0
 
-    def beat(self) -> None:
-        """Write a heartbeat. Call this on every polling iteration."""
+    def beat(self, status: str = "running") -> None:
+        """Write a heartbeat. Call this on every polling iteration.
+
+        Args:
+            status: Process status. Use "running" when healthy, "error" when
+                    the process is running but not functioning correctly.
+        """
         self._dir.mkdir(parents=True, exist_ok=True)
         self._iteration += 1
         data = {
             "process_key": self._process_key,
             "pid": os.getpid(),
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "status": "running",
+            "status": status,
             "iteration": self._iteration,
         }
         self._write_atomic(data)

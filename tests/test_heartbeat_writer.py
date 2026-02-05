@@ -99,3 +99,19 @@ def test_creates_heartbeat_dir_if_missing(tmp_path):
     )
     writer.beat()
     assert (hb_dir / "test.json").exists()
+
+
+def test_beat_with_error_status(writer, tmp_path):
+    """Processes can report errors via status parameter."""
+    writer.beat(status="error")
+    path = tmp_path / "test_process.json"
+    data = json.loads(path.read_text())
+    assert data["status"] == "error"
+
+
+def test_beat_status_defaults_to_running(writer, tmp_path):
+    """Default status is 'running'."""
+    writer.beat()
+    path = tmp_path / "test_process.json"
+    data = json.loads(path.read_text())
+    assert data["status"] == "running"

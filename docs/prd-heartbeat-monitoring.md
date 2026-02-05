@@ -1,6 +1,6 @@
 # PRD: Heartbeat Monitoring
 
-Version: 1.0.0
+Version: 1.1.0
 
 ## Overview
 
@@ -31,10 +31,11 @@ The Heartbeat Monitoring feature enables Watchdog to detect process health by re
 
 | State | Condition |
 |-------|-----------|
-| `HEALTHY` | Heartbeat exists, PID alive, timestamp within timeout |
+| `HEALTHY` | Heartbeat exists, PID alive, timestamp within timeout, status is "running" |
 | `TIMED_OUT` | Heartbeat exists but timestamp older than `timeout_seconds` |
 | `NO_HEARTBEAT` | Heartbeat file does not exist or is corrupted |
 | `STALE_PID` | Heartbeat exists but PID is no longer running |
+| `ERROR_STATUS` | Heartbeat exists but status field is not "running" (e.g., "error") |
 
 ## HeartbeatWriter API
 
@@ -75,4 +76,5 @@ Per-process settings in `config.json`:
 
 ## Changelog
 
+- 1.1.0: Add ERROR_STATUS health state for detecting processes reporting errors via status field
 - 1.0.0: Initial implementation with writer, reader, and checker

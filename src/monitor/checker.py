@@ -50,6 +50,8 @@ def check_process(
         health = ProcessHealth.STALE_PID
     elif elapsed > timeout:
         health = ProcessHealth.TIMED_OUT
+    elif heartbeat.status != "running":
+        health = ProcessHealth.ERROR_STATUS
     else:
         health = ProcessHealth.HEALTHY
 
