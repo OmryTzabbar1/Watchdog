@@ -1,7 +1,13 @@
 {
   "log_level": "INFO",
   "db_path": "/Users/work/Desktop/Folders/Projects/Watchdog/watchdog.db",
+  "lock_path": "/tmp/watchdog.lock",
+  "log_dir": "/Users/work/Desktop/Folders/Projects/Watchdog/logs",
   "consecutive_failures_threshold": 2,
+  "kill_timeout": 10.0,
+  "cleanup_timeout": 60.0,
+  "verify_delay": 2.0,
+  "cleanup_args": ["--force"],
   "processes": {
     "gmail_as_server": {
       "display_name": "GmailAsServer",
